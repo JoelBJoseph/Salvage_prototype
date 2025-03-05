@@ -6,7 +6,12 @@ class GeminiApiService {
     private apiKey: string;
 
     constructor() {
-        this.apiKey = process.env.GEMINI_API_KEY || '';
+        // Ensure this only runs on the server
+        if (typeof window === 'undefined') {
+            this.apiKey = process.env.GEMINI_API_KEY || '';
+        } else {
+            throw new Error('GeminiApiService should only be used on the server');
+        }
     }
 
     async transpile({ sourceCode, fileName }: TranspileOptions): Promise<TranspileResult> {

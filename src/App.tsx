@@ -14,18 +14,20 @@ const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-    const handleLoginSuccess = async (credentialResponse: any) => {
-        const decoded = JSON.parse(atob(credentialResponse.credential.split(".")[1]));
-        const { email, name, picture } = decoded;
+    // Access environment variable using import.meta.env
+    const googleClientId = '567486587529-l6hcg54t7jkdi4rj8ulk0ngv36gtud8l.apps.googleusercontent.com';
+    if (!googleClientId) {
+        throw new Error("Google Client ID is missing in environment variables.");
+    }
 
+    const handleLoginSuccess = async (credentialResponse: any) => {
         try {
-            // Call the API route to handle user login/creation
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch('http://localhost:3001/api/auth/google', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, name, picture }),
+                body: JSON.stringify({ token: credentialResponse.credential }),
             });
 
             if (!response.ok) {
@@ -46,11 +48,15 @@ const App: React.FC = () => {
         setIsAuthenticated(false);
     };
 
+    const handleFileSelect = (fileId: number) => {
+        console.log("File selected:", fileId);
+    };
+
     return (
-        <GoogleOAuthProvider clientId={process.env.GOOGLE_CLIENT_ID}>
-            {isAuthenticated ? (
+        <GoogleOAuthProvider clientId={googleClientId}>
+            {isAuthenticated && user ? (
                 <div className="flex h-screen bg-neutral-900">
-                    <FileDirectory userId={user.id} />
+                    <FileDirectory userId={user.id} onFileSelect={handleFileSelect} />
                     <div className="flex-1">
                         <CodeEditor userId={user.id} handleLogout={handleLogout} />
                     </div>
@@ -66,12 +72,13 @@ const App: React.FC = () => {
                     <p className="text-center text-sm mb-4">
                         Please log in to continue and explore the power of Salvage.
                     </p>
-                    <GoogleLogin
-                        onSuccess={handleLoginSuccess}
-                        onError={() => console.log("Login Failed")}
-                        useOneTap
-                        className="text-white py-3 px-8 rounded-lg border-2 border-white hover:bg-white hover:text-black transition"
-                    />
+                    <div className="text-white py-3 px-8 rounded-lg border-2 border-white hover:bg-white hover:text-black transition">
+                        <GoogleLogin
+                            onSuccess={handleLoginSuccess}
+                            onError={() => console.log("Login Failed")}
+                            useOneTap
+                        />
+                    </div>
                 </div>
             )}
         </GoogleOAuthProvider>
